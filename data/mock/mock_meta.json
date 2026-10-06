@@ -1,0 +1,12 @@
+{
+  "seed": 0,
+  "yaw0_deg": 37.0,
+  "offset_m": [
+    1.2,
+    -0.6,
+    0.0
+  ],
+  "rate_hz": 90,
+  "dropout": "foot_left 6.00-6.15 s",
+  "invalid": "hand_left 4.00-4.11 s"
+}
