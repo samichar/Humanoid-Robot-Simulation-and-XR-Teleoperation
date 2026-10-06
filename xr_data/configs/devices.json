@@ -1,0 +1,10 @@
+{
+  "_comment": "Edit 'serial' to match real hardware (print them with src/list_devices.py). 'role' = body segment.",
+  "devices": [
+    {"name": "hmd",         "type": "hmd",        "role": "head",        "serial": ""},
+    {"name": "ctrl_left",   "type": "controller", "role": "left_hand",   "serial": ""},
+    {"name": "ctrl_right",  "type": "controller", "role": "right_hand",  "serial": ""},
+    {"name": "tracker_1",   "type": "tracker",    "role": "pelvis",      "serial": "REPLACE_ME_1"},
+    {"name": "tracker_2",   "type": "tracker",    "role": "right_foot",  "serial": "REPLACE_ME_2"}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "_comment": "REPLACE WITH QUEST->VIVE TRANSFORM.",
+  "version": "placeholder",
+  "T_world_from_vive": [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]],
+  "floor_height_m": 0.0,
+  "units": "meters"
+}
