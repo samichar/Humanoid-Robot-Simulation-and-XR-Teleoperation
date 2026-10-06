@@ -1,0 +1,41 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE
+.vscode/
+.idea/
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# macOS
+.DS_Store
+
+# Raw / generated data
+data/raw/*
+!data/raw/.gitkeep
+
+data/processed/*
+!data/processed/.gitkeep
+
+# Results
+results/*
+!results/.gitkeep
+
+# Logs
+logs/
+
+# Training checkpoints
+*.pt
+*.pth
+*.ckpt
+
+# Large media
+*.mp4
+*.zip
