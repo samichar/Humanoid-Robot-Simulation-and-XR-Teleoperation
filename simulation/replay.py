@@ -46,6 +46,23 @@ def load_recording(path):
         d["t"] = d["t"] - t0                       # common time origin
     return out
 
+def load_npz_recording(path):
+    """Load a Task 3 recording (src/record.py format: <id>.npz + <id>.json).
+    Positions in OpenVR axes, quaternions wxyz; invalid samples are NaN and dropped here."""
+    base = Path(path).with_suffix("")
+    z = np.load(f"{base}.npz"); meta = json.loads(Path(f"{base}.json").read_text())
+    role = {d["name"]: d["role"] for d in meta["device_table"]}
+    t = z["t_system"]; out = {}
+    for name in meta["devices"]:
+        p = z[f"{name}__position"]; q = z[f"{name}__quat_wxyz"]
+        ok = z[f"{name}__valid"].astype(bool) & np.isfinite(p).all(1) & np.isfinite(q).all(1)
+        if ok.sum() < 2:
+            print(f"[warn] {name}: fewer than 2 valid samples, skipped"); continue
+        out[role[name]] = {"t": t[ok] - t[0],
+                           "p": steam_pos_to_mj(p[ok]),
+                           "q": steam_quat_to_mj(q[ok][:, [1, 2, 3, 0]]),   # wxyz -> xyzw
+                           "valid": np.ones(ok.sum(), bool)}
+    return out
 
 def calibrate(rec, robot_pelvis_z):
     """Placeholder calibration from the neutral window. Returns a dict Task 2 can replace."""
