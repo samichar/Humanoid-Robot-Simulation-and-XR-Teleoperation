@@ -7,6 +7,7 @@ REAL:  python src/record.py --source openvr --sequence neutral --duration 30 --o
 """
 import argparse, json, time, platform, sys, datetime
 import numpy as np
+import os
 from devices import MockSource, OpenVRSource
 from io_utils import save_recording, sha256_of
 
