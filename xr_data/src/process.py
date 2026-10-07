@@ -1,7 +1,7 @@
 """raw -> processed: resample to a common rate, SLERP quaternions, low-pass filter.
 raw files are never modified.
 
-python src/process.py data/raw/x.npz data/processed/x_60hz.npz --rate 60 --max-gap 0.1 --cutoff 8
+python src/process.py data/raw/x.npz data/processed/x_50hz.npz --rate 50 --max-gap 0.1 --cutoff 8
 Rules:
  *only valid raw samples are used as interpolation anchors
  *output sample is valid only if the nearest raw valid samples on BOTH sides are <= max_gap apart
@@ -65,7 +65,7 @@ def lowpass(pos, quat, ok, rate, cutoff):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("inp"); ap.add_argument("out")
-    ap.add_argument("--rate", type=float, default=60.0)
+    ap.add_argument("--rate", type=float, default=50.0)
     ap.add_argument("--max-gap", type=float, default=0.1, help="s; longer gaps stay missing")
     ap.add_argument("--cutoff", type=float, default=8.0, help="Hz; 0 disables filtering")
     a = ap.parse_args()
