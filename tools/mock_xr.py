@@ -31,7 +31,8 @@ DEVICES = {  # segment: (serial, neutral position in operator frame, m)
     "left_hand":  ("LHR-CTRL0001", np.array([0.00, 0.25, 0.95])),
     "right_hand": ("LHR-CTRL0002", np.array([0.00, -0.25, 0.95])),
     "pelvis":     ("LHR-TRKR0001", np.array([0.00, 0.00, 1.00])),
-    "foot_right":  ("LHR-TRKR0002", np.array([0.00, 0.10, 0.08])),
+    "right_foot":  ("LHR-TRKR0002", np.array([0.00, 0.10, 0.08])),
+    "left_foot":  ("LHR-TRKR0003", np.array([0.00, 0.10, 0.08])),
 }
 DURATION = 10.0
 
@@ -52,8 +53,10 @@ def operator_motion(seg, t):
         pitch = -np.deg2rad(60) * raise_
     if seg in ("head", "pelvis", "hand_left", "hand_right"):
         p[:, 2] -= 0.25 * squat                                    # whole upper body lowers
-    if seg == "foot_left":
-        p[:, 2] += 0.15 * step                                     # foot lifts
+    if seg == "left_foot":
+        p[:, 2] += 0.15 * smooth(t, 8, 9)                          # left foot steps first
+    if seg == "right_foot":
+        p[:, 2] += 0.15 * smooth(t, 9, 10)                         # then right foot                                    # foot lifts
     q = R.from_euler("y", pitch[:, None]).as_quat()
     return p, q
 
