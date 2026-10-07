@@ -69,7 +69,7 @@ def main():
         src.close()
 
     meta = {
-        "recording_id": a.out.split("/")[-1].rsplit(".", 1)[0],
+        "recording_id": os.path.splitext(os.path.basename(a.out))[0],
         "sequence": a.sequence, "operator": a.operator, "source": a.source,
         "created_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "clock": "time.perf_counter, seconds since recording start (software timestamp at poll time)",
