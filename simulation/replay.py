@@ -108,7 +108,8 @@ def build_scene(segments):
 
 
 def main(args):
-    rec = load_recording(args.recording)
+        rec = (load_npz_recording(args.recording) if args.recording.endswith(".npz")
+           else load_recording(args.recording))
     M = build_scene(sorted(rec)); D = mujoco.MjData(M)
     mujoco.mj_resetDataKeyframe(M, D, mujoco.mj_name2id(M, mujoco.mjtObj.mjOBJ_KEY, KEYFRAME))
     cal = calibrate(rec, robot_pelvis_z=float(D.qpos[2]))
