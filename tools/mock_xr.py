@@ -28,10 +28,10 @@ from common.frames import mj_pos_to_steam, mj_quat_to_steam
 
 DEVICES = {  # segment: (serial, neutral position in operator frame, m)
     "head":       ("LHR-HMD00001", np.array([0.00, 0.00, 1.70])),
-    "hand_left":  ("LHR-CTRL0001", np.array([0.00, 0.25, 0.95])),
-    "hand_right": ("LHR-CTRL0002", np.array([0.00, -0.25, 0.95])),
+    "left_hand":  ("LHR-CTRL0001", np.array([0.00, 0.25, 0.95])),
+    "right_hand": ("LHR-CTRL0002", np.array([0.00, -0.25, 0.95])),
     "pelvis":     ("LHR-TRKR0001", np.array([0.00, 0.00, 1.00])),
-    "foot_left":  ("LHR-TRKR0002", np.array([0.00, 0.10, 0.08])),
+    "foot_right":  ("LHR-TRKR0002", np.array([0.00, 0.10, 0.08])),
 }
 DURATION = 10.0
 
