@@ -5,6 +5,7 @@
     {"name": "ctrl_left",   "type": "controller", "role": "left_hand",   "serial": ""},
     {"name": "ctrl_right",  "type": "controller", "role": "right_hand",  "serial": ""},
     {"name": "tracker_1",   "type": "tracker",    "role": "pelvis",      "serial": "REPLACE_ME_1"},
-    {"name": "tracker_2",   "type": "tracker",    "role": "right_foot",  "serial": "REPLACE_ME_2"}
+    {"name": "tracker_2",   "type": "tracker",    "role": "right_foot",  "serial": "REPLACE_ME_2"},
+    {"name": "tracker_3",   "type": "tracker",    "role": "left_foot",   "serial": "REPLACE_ME_3"}
   ]
 }
