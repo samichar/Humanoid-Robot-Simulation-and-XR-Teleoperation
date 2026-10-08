@@ -28,8 +28,8 @@ from config import SCENE_XML, KEYFRAME, CONTROL_HZ, RESULTS, ROOT
 
 NEUTRAL_S = 1.5      # first seconds of every recording: operator stands in neutral pose
 MAX_GAP_S = 0.05     # resampled points inside a longer gap are marked invalid, not interpolated
-COLORS = {"head": [1, 1, 0, 1], "hand_left": [0, 1, 0, 1], "hand_right": [1, 0, 0, 1],
-          "pelvis": [0, 0.6, 1, 1], "foot_left": [1, 0, 1, 1], "foot_right": [1, 0.5, 0, 1]}
+COLORS = {"head": [1, 1, 0, 1], "left_hand": [0, 1, 0, 1], "right_hand": [1, 0, 0, 1],
+          "pelvis": [0, 0.6, 1, 1], "left_foot": [0, 1, 1, 1], "right_foot": [1, 0, 1, 1]}
 
 
 def load_recording(path):
@@ -45,6 +45,7 @@ def load_recording(path):
     for d in out.values():
         d["t"] = d["t"] - t0                       # common time origin
     return out
+
 
 def load_npz_recording(path):
     """Load a Task 3 recording (src/record.py format: <id>.npz + <id>.json).
@@ -63,6 +64,7 @@ def load_npz_recording(path):
                            "q": steam_quat_to_mj(q[ok][:, [1, 2, 3, 0]]),   # wxyz -> xyzw
                            "valid": np.ones(ok.sum(), bool)}
     return out
+
 
 def calibrate(rec, robot_pelvis_z):
     """Placeholder calibration from the neutral window. Returns a dict Task 2 can replace."""
@@ -109,7 +111,7 @@ def build_scene(segments):
 
 def main(args):
     rec = (load_npz_recording(args.recording) if args.recording.endswith(".npz")
-        else load_recording(args.recording))
+           else load_recording(args.recording))
     M = build_scene(sorted(rec)); D = mujoco.MjData(M)
     mujoco.mj_resetDataKeyframe(M, D, mujoco.mj_name2id(M, mujoco.mjtObj.mjOBJ_KEY, KEYFRAME))
     cal = calibrate(rec, robot_pelvis_z=float(D.qpos[2]))
