@@ -31,7 +31,7 @@ DEVICES = {  # segment: (serial, neutral position in operator frame, m)
     "left_hand":  ("LHR-CTRL0001", np.array([0.00, 0.25, 0.95])),
     "right_hand": ("LHR-CTRL0002", np.array([0.00, -0.25, 0.95])),
     "pelvis":     ("LHR-TRKR0001", np.array([0.00, 0.00, 1.00])),
-    "right_foot":  ("LHR-TRKR0002", np.array([0.00, 0.10, 0.08])),
+    "right_foot": ("LHR-TRKR0002", np.array([0.00, -0.10, 0.08])),
     "left_foot":  ("LHR-TRKR0003", np.array([0.00, 0.10, 0.08])),
 }
 DURATION = 10.0
@@ -47,16 +47,16 @@ def operator_motion(seg, t):
     """Ground-truth pose of one segment in the operator frame. Returns (pos, quat_xyzw)."""
     p = np.tile(DEVICES[seg][1], (len(t), 1)).astype(float)
     pitch = np.zeros_like(t)
-    raise_ = smooth(t, 2, 5); squat = smooth(t, 5, 8); step = smooth(t, 8, 10)
-    if seg.startswith("hand"):
+    raise_ = smooth(t, 2, 5); squat = smooth(t, 5, 8)
+    if seg.endswith("hand"):
         p[:, 0] += 0.45 * raise_; p[:, 2] += 0.40 * raise_       # arms forward and up
         pitch = -np.deg2rad(60) * raise_
-    if seg in ("head", "pelvis", "hand_left", "hand_right"):
+    if seg in ("head", "pelvis", "left_hand", "right_hand"):
         p[:, 2] -= 0.25 * squat                                    # whole upper body lowers
     if seg == "left_foot":
         p[:, 2] += 0.15 * smooth(t, 8, 9)                          # left foot steps first
     if seg == "right_foot":
-        p[:, 2] += 0.15 * smooth(t, 9, 10)                         # then right foot                                    # foot lifts
+        p[:, 2] += 0.15 * smooth(t, 9, 10)                         # then right foot
     q = R.from_euler("y", pitch[:, None]).as_quat()
     return p, q
 
@@ -78,9 +78,9 @@ def main(seed):
         q_steam = mj_quat_to_steam(q_trk)
         valid = np.ones(t.size, dtype=int)
         keep = np.ones(t.size, dtype=bool)
-        if seg == "foot_left":
+        if seg == "right_foot":
             keep &= ~((t - 1000.0 > 6.0) & (t - 1000.0 < 6.15))     # 150 ms dropout
-        if seg == "hand_left":
+        if seg == "left_hand":
             valid[(t - 1000.0 > 4.0) & (t - 1000.0 < 4.11)] = 0      # flagged invalid
         for i in np.flatnonzero(keep):
             rows.append([t[i], serial, seg, *p_steam[i], *q_steam[i], valid[i]])
