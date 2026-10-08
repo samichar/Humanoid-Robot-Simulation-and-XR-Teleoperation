@@ -42,8 +42,13 @@ TASKS = {
 }
 ROT_W = 0.3          # orientation error weight relative to position (rad vs m)
 POSTURE_W = 0.05     # pull joints toward the stand pose when targets don't constrain them
-DAMPING = 1e-2       # DLS damping
+SMOOTH_W = 0.05       # pull joints toward the previous frame's solution (temporal smoothness)
+DAMPING = 0.02       # DLS damping (higher = steadier near singularities, e.g. straight knees)
 ITERS = 15
+MAX_IK_STEP = 0.15   # rad, cap on any joint's change per IK iteration (prevents branch flips)
+SOFT_KNEE = 0.25     # rad, neutral knee bend; a straight knee sits on its limit and is singular
+FILTER_HZ = 4.0      # low-pass cutoff on tracker targets (human motion is mostly < 4 Hz)
+MAX_JOINT_SPEED = 10  # rad/s, joint velocity clamp on the retargeted reference
 
 
 def build_model(segments):
@@ -56,6 +61,24 @@ def build_model(segments):
         b.add_geom(type=mujoco.mjtGeom.mjGEOM_SPHERE, size=[0.03, 0, 0], contype=0,
                    conaffinity=0, rgba=rp.COLORS.get(seg, [1, 1, 1, 1]))
     return spec.compile()
+
+
+def smooth_targets(rs, hz):
+    """Clean tracker targets before IK: spike rejection, quaternion sign continuity,
+    zero-phase low-pass. Offline (filtfilt); a live version needs a causal filter."""
+    from scipy.signal import butter, filtfilt, medfilt
+    b, a = butter(2, FILTER_HZ / (hz / 2))
+    for seg, d in rs.items():
+        if seg == "t":
+            continue
+        p = np.stack([medfilt(d["p"][:, k], 5) for k in range(3)], 1)       # kill single-frame spikes
+        d["p"] = filtfilt(b, a, p, axis=0)
+        q = d["q"].copy()
+        for k in range(1, len(q)):                                          # q and -q are the same
+            if np.dot(q[k], q[k - 1]) < 0:                                  # rotation; keep the path
+                q[k] = -q[k]                                                # continuous before filtering
+        q = filtfilt(b, a, q, axis=0)
+        d["q"] = q / np.linalg.norm(q, axis=1, keepdims=True)
 
 
 def site_pose(M, D, sid):
@@ -76,7 +99,19 @@ def neutral_offsets(M, D, rs, sites, n_neutral):
     return off
 
 
-def ik_step(M, D, targets, sites, q_stand, lo, hi):
+def soft_knee_stand(M, D):
+    """Stand keyframe with slightly bent knees (hip + knee + ankle pitch sum to 0 so the feet
+    stay flat), pelvis lowered so the feet stay on the floor. Used as the IK neutral pose."""
+    foot = mujoco.mj_name2id(M, mujoco.mjtObj.mjOBJ_SITE, "left_foot")
+    mujoco.mj_kinematics(M, D); z0 = D.site_xpos[foot, 2]
+    for hip, knee, ankle in ((7, 10, 11), (13, 16, 17)):        # qpos indices, left and right leg
+        D.qpos[hip] = -SOFT_KNEE / 2; D.qpos[knee] = SOFT_KNEE; D.qpos[ankle] = -SOFT_KNEE / 2
+    mujoco.mj_kinematics(M, D)
+    D.qpos[2] -= D.site_xpos[foot, 2] - z0
+    mujoco.mj_forward(M, D)
+
+
+def ik_step(M, D, targets, sites, q_stand, lo, hi, q_prev):
     """targets: {seg: (pos, rotmat or None)}. Iterates DLS IK in place on D.qpos."""
     nv = M.nv
     jacp = np.zeros((3, nv)); jacr = np.zeros((3, nv))
@@ -93,8 +128,12 @@ def ik_step(M, D, targets, sites, q_stand, lo, hi):
                 rows.append(w * ROT_W * jacr); errs.append(w * ROT_W * e_rot)
         post = np.zeros((nv - 6, nv)); post[:, 6:] = np.eye(nv - 6)    # posture regularizer
         rows.append(POSTURE_W * post); errs.append(POSTURE_W * (q_stand[7:] - D.qpos[7:]))
+        rows.append(SMOOTH_W * post); errs.append(SMOOTH_W * (q_prev[7:] - D.qpos[7:]))
         J = np.vstack(rows); e = np.concatenate(errs)
         dq = np.linalg.solve(J.T @ J + DAMPING * np.eye(nv), J.T @ e)
+        biggest = np.abs(dq).max()
+        if biggest > MAX_IK_STEP:
+            dq *= MAX_IK_STEP / biggest
         mujoco.mj_integratePos(M, D.qpos, dq, 1.0)
         D.qpos[7:] = np.clip(D.qpos[7:], lo, hi)                        # joint-limit handling
     mujoco.mj_kinematics(M, D)
@@ -106,11 +145,13 @@ def main(a):
     segs = sorted(rec)
     M = build_model(segs); D = mujoco.MjData(M)
     key = mujoco.mj_name2id(M, mujoco.mjtObj.mjOBJ_KEY, KEYFRAME)
-    mujoco.mj_resetDataKeyframe(M, D, key); mujoco.mj_forward(M, D)
+    mujoco.mj_resetDataKeyframe(M, D, key); soft_knee_stand(M, D)
     q_stand = D.qpos.copy()
     cal = rp.calibrate(rec, robot_pelvis_z=float(D.qpos[2]))
     rp.apply_calibration(rec, cal)
     rs = rp.resample(rec, CONTROL_HZ)
+    if not a.no_filter:
+        smooth_targets(rs, CONTROL_HZ)
     sites = {s: mujoco.mj_name2id(M, mujoco.mjtObj.mjOBJ_SITE, f"ik_{s}") for s in segs if s in TASKS}
     mocap = {s: M.body_mocapid[mujoco.mj_name2id(M, mujoco.mjtObj.mjOBJ_BODY, f"target_{s}")] for s in segs}
     n_neutral = int(rp.NEUTRAL_S * CONTROL_HZ)
@@ -134,10 +175,18 @@ def main(a):
             ik.mocap_quat[mocap[s]] = (Rq * off[s]["dR"]).as_quat()[[3, 0, 1, 2]] if s in off else [1, 0, 0, 0]
             if s in sites:
                 targets[s] = (ik_p, (Rq * off[s]["dR"]).as_matrix() if TASKS[s][2] else None)
-        ik_step(M, ik, targets, sites, q_stand, lo, hi)
+        q_prev = ik.qpos.copy()
+        ik_step(M, ik, targets, sites, q_stand, lo, hi, q_prev)
         Q[k] = ik.qpos
         for s, (p_t, _) in targets.items():
             err[s][k] = np.linalg.norm(site_pose(M, ik, sites[s])[0] - p_t) * 1000
+    clamped = 0
+    if not a.no_filter:                       # joint velocity clamp on the OUTPUT reference only;
+        step = MAX_JOINT_SPEED / CONTROL_HZ   # the IK itself keeps tracking unclamped
+        for k in range(1, N):
+            d = np.clip(Q[k, 7:] - Q[k - 1, 7:], -step, step)
+            clamped += int(np.sum(d != Q[k, 7:] - Q[k - 1, 7:]))
+            Q[k, 7:] = Q[k - 1, 7:] + d
     limit_hits = int(np.sum((Q[:, 7:] <= lo + 1e-4) | (Q[:, 7:] >= hi - 1e-4)))
 
     rid = Path(a.recording).stem
@@ -145,7 +194,9 @@ def main(a):
     np.savez(RESULTS / f"retarget_{rid}.npz", t=rs["t"], qpos=Q, joint_targets=Q[:, 7:])
     report = {"recording": a.recording, "frames": N, "rate_hz": CONTROL_HZ,
               "ik_error_mm": {s: {"mean": float(np.nanmean(e)), "max": float(np.nanmax(e))} for s, e in err.items()},
-              "joint_limit_hits": limit_hits}
+              "joint_limit_hits": limit_hits, "velocity_clamped": clamped, "filtered": not a.no_filter,
+              "max_joint_speed_rad_s": float(np.abs(np.diff(Q[:, 7:], axis=0)).max() * CONTROL_HZ),
+              "p99_joint_speed_rad_s": float(np.percentile(np.abs(np.diff(Q[:, 7:], axis=0)) * CONTROL_HZ, 99))}
     (RESULTS / f"retarget_{rid}.json").write_text(json.dumps(report, indent=2))
     print(json.dumps(report, indent=2))
 
@@ -192,4 +243,5 @@ if __name__ == "__main__":
     ap.add_argument("--recording", default=str(ROOT / "data" / "mock" / "mock_session.csv"))
     ap.add_argument("--mode", choices=["kinematic", "physics"], default="kinematic")
     ap.add_argument("--view", action="store_true")
+    ap.add_argument("--no-filter", action="store_true", help="disable smoothing (for comparison)")
     main(ap.parse_args())
