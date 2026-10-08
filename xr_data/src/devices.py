@@ -18,7 +18,7 @@ class MockSource:
     """Fake humanoid-ish motion + realistic defects (jitter, random invalid frames, a disconnect, stalls)."""
 
     BASE = {"head": (0, 1.65, 0), "left_hand": (-0.25, 1.0, 0.1), "right_hand": (0.25, 1.0, 0.1),
-            "pelvis": (0, 0.95, 0), "right_foot": (0.1, 0.1, 0)}   # x right, y up, z back (OpenVR convention)
+        "pelvis": (0, 0.95, 0), "right_foot": (0.1, 0.1, 0), "left_foot": (-0.1, 0.1, 0)}
 
     def __init__(self, devices, sequence="neutral", seed=0, disconnect=(None, 0.0)):
         self.devs = devices
