@@ -1,0 +1,102 @@
+{
+  "recording_id": "neutral_21",
+  "sequence": "neutral",
+  "operator": "NAME",
+  "source": "openvr",
+  "created_utc": "2026-10-09T15:43:16.516430+00:00",
+  "clock": "time.perf_counter, seconds since recording start (software timestamp at poll time)",
+  "target_rate_hz": 90.0,
+  "units": {
+    "position": "meters",
+    "time": "seconds"
+  },
+  "orientation": "unit quaternion, order w,x,y,z, rotation of device frame in tracking frame",
+  "coordinate_convention": "OpenVR standing universe: right-handed, +x right, +y up, -z forward, origin at floor",
+  "device_table": [
+    {
+      "name": "hmd",
+      "type": "hmd",
+      "role": "head",
+      "serial": ""
+    },
+    {
+      "name": "ctrl_left",
+      "type": "controller",
+      "role": "left_hand",
+      "serial": ""
+    },
+    {
+      "name": "ctrl_right",
+      "type": "controller",
+      "role": "right_hand",
+      "serial": ""
+    },
+    {
+      "name": "tracker_1",
+      "type": "tracker",
+      "role": "pelvis",
+      "serial": "59-A33R04534"
+    },
+    {
+      "name": "tracker_2",
+      "type": "tracker",
+      "role": "right_foot",
+      "serial": "59-A33R00919"
+    },
+    {
+      "name": "tracker_3",
+      "type": "tracker",
+      "role": "left_foot",
+      "serial": "59-A33R04591"
+    }
+  ],
+  "calibration_file": "configs/calibration.json",
+  "calibration_sha256": "e5be40ed796e148e517d8607ee16e348300983caf65abf7c328c477f8ca8afd5",
+  "calibration": {
+    "_comment": "REPLACE WITH QUEST->VIVE TRANSFORM.",
+    "version": "placeholder",
+    "T_world_from_vive": [
+      [
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1
+      ]
+    ],
+    "floor_height_m": 0.0,
+    "units": "meters"
+  },
+  "software": {
+    "python": "3.13.13",
+    "numpy": "2.4.4",
+    "os": "Windows-11-10.0.26200-SP0"
+  },
+  "schema_version": "1.0",
+  "devices": [
+    "hmd",
+    "ctrl_left",
+    "ctrl_right",
+    "tracker_1",
+    "tracker_2",
+    "tracker_3"
+  ],
+  "n_samples": 2700
+}
