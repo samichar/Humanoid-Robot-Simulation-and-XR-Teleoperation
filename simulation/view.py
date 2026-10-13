@@ -1,5 +1,3 @@
-"""Interactive viewer: loads the G1 at the 'stand' keyframe, holds it in real time.
-Close the window to exit. Double-click a body + Ctrl+right-drag to push it."""
 import time
 import mujoco
 import mujoco.viewer
