@@ -1,4 +1,3 @@
-"""Generate docs/robot.md: actuated joints, limits, actuator gains."""
 import mujoco
 from config import SCENE_XML, ROOT
 
