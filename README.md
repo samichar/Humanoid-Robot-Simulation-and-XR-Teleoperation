@@ -87,6 +87,51 @@ python retarget.py --recording ..\xr_data\data\raw\arm_wave_raise.npz --view
 - `retarget.py --view` makes the robot follow the mock motion.
 - The last command does the same with a real recording.
 
+## Full pipeline: record → process → retarget
+
+Records real motion and plays it on the G1. Data flows Task 2 (hardware) → Task 3 (data) → Task 1 (simulation).
+
+Pick one recording ID and use it in every command. Here it is `arm_raise_01`.
+
+**1. Record (from `xr_data\`)**
+
+Before starting: SteamVR running, Quest 3 connected, all three trackers green.
+
+```bat
+cd xr_data
+python src\list_devices.py
+python src\record.py --source openvr --sequence arm_raise --duration 30 --operator SAM --out data/raw/arm_raise_01.npz
+python src\process.py data/raw/arm_raise_01.npz data/processed/arm_raise_01_50hz.npz --rate 50
+python src\plot_quality.py data/raw/arm_raise_01.npz --outdir plots
+```
+
+- `list_devices.py` confirms all six devices are visible.
+- Start every recording with 2–3 s of standing still in the neutral pose.
+- `process.py` resamples and filters the recording.
+- `plot_quality.py` writes the quality plots; check them before moving on.
+
+**2. Retarget onto the robot (from `simulation\`)**
+
+```bat
+cd ..\simulation
+python replay.py --recording ..\xr_data\data\raw\arm_raise_01.npz --view
+python retarget.py --recording ..\xr_data\data\raw\arm_raise_01.npz --view
+```
+
+- `replay.py` is optional: it shows the tracked targets as dots.
+- `retarget.py` makes the robot follow the motion.
+
+| Step | Script | Output |
+|---|---|---|
+| Device check | `xr_data/src/list_devices.py` | Device list with serials |
+| Record | `xr_data/src/record.py` | `xr_data/data/raw/<id>.npz` + `.json` |
+| Process | `xr_data/src/process.py` | `xr_data/data/processed/<id>_50hz.npz` |
+| Quality check | `xr_data/src/plot_quality.py` | `xr_data/plots/<id>_*.png`, `<id>_quality.json` |
+| Replay (optional) | `simulation/replay.py` | `results/replay_report.json` |
+| Retarget | `simulation/retarget.py` | `results/retarget_<id>.npz` + `.json` |
+
+Retargeting reads the **raw** file because it does its own 50 Hz resampling and filtering. The processed file is for quality checks and the dataset submission.
+
 ## Citations and licenses
 
 | Component                                                                                        | Use                                      | License                         |
